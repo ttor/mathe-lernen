@@ -1,16 +1,16 @@
-# Uhrzeiten Lernen
+# Mathe-Spiel
 
-Ein einfaches Spiel, um deutsche Uhrzeiten zu üben und zu lernen.
+Ein einfaches Spiel, um das kleine Einmaleins (Multiplikation und Division) spielerisch zu trainieren.
 
 ## Beschreibung
 
-Das Spiel zeigt eine Uhrzeit in digitaler Form (z. B. "13:30") oder als Text (z. B. "halb zwei"). Ziel ist es, die korrekte Antwort aus mehreren Optionen auszuwählen.
+In diesem Spiel kannst du deine Rechenfähigkeiten im kleinen Einmaleins verbessern. Du erhältst Fragen zu Multiplikation (z. B. "6 x 7") oder Division (z. B. "48:8"). Deine Aufgabe ist es, die richtige Lösung aus mehreren Auswahlmöglichkeiten zu wählen. Eine Runde besteht aus 20 Fragen – versuche, möglichst viele davon korrekt zu beantworten!
 
 ## Spielmodi
 
-1. **Zahlenmodus**: Die Uhrzeit wird digital angezeigt, und die richtige Antwort muss ausgewählt werden.
-2. **Wortmodus**: Die Uhrzeit wird als Text angezeigt, und die digitale Darstellung muss ausgewählt werden.
-3. **Gemischter Modus**: Beide Modi werden abwechselnd verwendet.
+1. **Multiplikation**: Es werden nur Aufgaben im Format "a x b" gestellt.
+2. **Division**: Es werden nur Aufgaben im Format "a:b" gestellt.
+3. **Gemischt**: Multiplikations- und Divisionsaufgaben wechseln sich ab.
 
 ## Highscores
 
@@ -18,7 +18,8 @@ Das Spiel speichert die besten Ergebnisse (maximal 5 Einträge pro Modus) und ze
 
 ## Online-Version
 
-Das Spiel ist hier verfügbar: [Uhrzeiten Lernen](https://ttor.github.io/uhrzeiten-lernen/).
+Das Spiel ist hier verfügbar: [Mathe-Spiel](https://ttor.github.io/mathe-lernen/).
+
 
 ## Lizenz
 
