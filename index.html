@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathe-Spiel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            overflow: hidden;
+        }
+        .container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .visible {
+            display: flex;
+        }
+        header {
+            width: 100%;
+            position: fixed;
+            top: 0;
+            background-color: #f4f4f4;
+            padding: 10px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            z-index: 10;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            margin: 0 auto;
+            font-size: 1rem;
+        }
+        .time-display {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            margin-top: 70px; /* Abstand von der fixierten Header-Leiste */
+            text-align: center;
+        }
+        .buttons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 90%;
+        }
+        button {
+            padding: 15px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+        }
+        #quick-start {
+            background-color: #FFD700;
+            font-weight: bold;
+            border: 2px solid #FFA500;
+        }
+        #quick-start:hover {
+            background-color: #FFC107;
+        }
+        #view-highscores {
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        .correct {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .incorrect {
+            background-color: #F44336;
+            color: white;
+        }
+        .flash {
+            animation: flash 0.2s;
+        }
+        @keyframes flash {
+            0% { background-color: transparent; }
+            50% { background-color: rgba(0, 255, 0, 0.2); }
+            100% { background-color: transparent; }
+        }
+        .flash-incorrect {
+            animation: flash-incorrect 0.2s;
+        }
+        @keyframes flash-incorrect {
+            0% { background-color: transparent; }
+            50% { background-color: rgba(255, 0, 0, 0.2); }
+            100% { background-color: transparent; }
+        }
+        #highscores .highscore-entry {
+            text-align: left;
+            margin: 5px 0;
+        }
+        .new-highscore {
+            background-color: #FFD700;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container visible" id="start-screen">
+        <h1>Mathe-Spiel</h1>
+        <!-- Reusing these IDs but changing text -->
+        <button id="word-mode">Multiplikation</button>
+        <button id="number-mode">Division</button>
+        <button id="mixed-mode">Gemischt</button>
+        <button id="quick-start">Schnell starten</button>
+        <button id="view-highscores">Highscores</button>
+    </div>
+    <div class="container" id="game-screen">
+        <header>
+            <div class="stats">
+                <div id="question-number">Frage: 0/20</div>
+                <div id="timer">Zeit: 0.00s</div>
+                <div id="score">Richtig: 0/20</div>
+            </div>
+        </header>
+        <div class="time-display" id="time-display"></div>
+        <div class="buttons-container" id="buttons-container"></div>
+    </div>
+    <div class="container" id="result-screen">
+        <h1>Ergebnis</h1>
+        <p id="result-time"></p>
+        <p id="result-score"></p>
+        <div id="highscores-current"></div>
+        <button id="restart-button">Neu starten</button>
+    </div>
+    <div class="container" id="highscores-screen">
+        <h1>Highscores</h1>
+        <div id="highscores"></div>
+        <button id="clear-highscores">Highscores löschen</button>
+        <button id="back-to-menu">Zurück</button>
+    </div>
+
+    <script>
+        // References to the screens
+        const startScreen = document.getElementById("start-screen");
+        const gameScreen = document.getElementById("game-screen");
+        const resultScreen = document.getElementById("result-screen");
+        const highscoresScreen = document.getElementById("highscores-screen");
+
+        // Buttons
+        const viewHighscoresButton = document.getElementById("view-highscores");
+        const clearHighscoresButton = document.getElementById("clear-highscores");
+        const backToMenuButton = document.getElementById("back-to-menu");
+
+        const wordModeButton = document.getElementById("word-mode");   // now for Multiplikation
+        const numberModeButton = document.getElementById("number-mode"); // now for Division
+        const mixedModeButton = document.getElementById("mixed-mode");
+        const quickStartButton = document.getElementById("quick-start");
+        const restartButton = document.getElementById("restart-button");
+
+        // Display areas
+        const timeDisplay = document.getElementById("time-display");
+        const buttonsContainer = document.getElementById("buttons-container");
+        const highscoresDisplay = document.getElementById("highscores");
+        const highscoresCurrentDisplay = document.getElementById("highscores-current");
+        const timerDisplay = document.getElementById("timer");
+        const questionNumberDisplay = document.getElementById("question-number");
+        const scoreDisplay = document.getElementById("score");
+        const resultTimeDisplay = document.getElementById("result-time");
+        const resultScoreDisplay = document.getElementById("result-score");
+
+        // Game variables
+        let mode = "multiplication";
+        let currentQuestion = 0;
+        let correctAnswers = 0;
+        let startTime = 0;
+        let timerInterval;
+
+        // ----------------------------------------------------------------------------
+        // Highscore functions
+        // ----------------------------------------------------------------------------
+        function getHighscores() {
+            // We'll store them under "multiplication", "division", and "mixed"
+            return JSON.parse(localStorage.getItem("highscores")) || {
+                multiplication: [],
+                division: [],
+                mixed: []
+            };
+        }
+
+        function saveHighscores(mode, score, time) {
+            const highscores = getHighscores();
+            const newEntry = { score, time: parseFloat(time.toFixed(2)), date: new Date().toISOString() };
+            highscores[mode].push(newEntry);
+
+            // Sort by highest score, then by fastest time
+            highscores[mode] = highscores[mode]
+                .sort((a, b) => b.score - a.score || a.time - b.time)
+                .slice(0, 5);
+
+            localStorage.setItem("highscores", JSON.stringify(highscores));
+            return highscores[mode].indexOf(newEntry);
+        }
+
+        function clearHighscores() {
+            localStorage.removeItem("highscores");
+        }
+
+        function renderHighscores(mode) {
+            const highscores = getHighscores();
+            const list = highscores[mode];
+            return list
+                .map(
+                    (entry, index) =>
+                        `<div class="highscore-entry">${index + 1}. ${entry.score} Punkte, ${entry.time.toFixed(
+                            2
+                        )} Sekunden (${new Date(entry.date).toLocaleString("de-DE")})</div>`
+                )
+                .join("");
+        }
+
+        // ----------------------------------------------------------------------------
+        // Navigation / Screen toggling
+        // ----------------------------------------------------------------------------
+        function showGameScreen(selectedMode) {
+            startScreen.classList.remove("visible");
+            gameScreen.classList.add("visible");
+
+            mode = selectedMode;
+            currentQuestion = 0;
+            correctAnswers = 0;
+            startTime = Date.now();
+
+            scoreDisplay.textContent = "Richtig: 0/20";
+            questionNumberDisplay.textContent = "Frage: 0/20";
+
+            timerInterval = setInterval(() => {
+                const elapsedTime = (Date.now() - startTime) / 1000;
+                timerDisplay.textContent = `Zeit: ${elapsedTime.toFixed(2)}s`;
+            }, 100);
+
+            renderQuestion();
+        }
+
+        function showResultScreen(score, time) {
+            clearInterval(timerInterval);
+            const index = saveHighscores(mode, score, time);
+            const highscores = getHighscores();
+
+            gameScreen.classList.remove("visible");
+            resultScreen.classList.add("visible");
+            resultScoreDisplay.innerHTML = `Richtig: ${score}`;
+            resultTimeDisplay.innerHTML = `Zeit: ${time.toFixed(2)} Sekunden`;
+
+            highscoresCurrentDisplay.innerHTML = highscores[mode]
+                .map(
+                    (entry, idx) =>
+                        `<div class="highscore-entry ${
+                            idx === index ? "new-highscore" : ""
+                        }">${idx + 1}. ${entry.score} Punkte, ${entry.time.toFixed(2)} Sekunden (${
+                            new Date(entry.date).toLocaleString("de-DE")
+                        })</div>`
+                )
+                .join("");
+        }
+
+        function showHighscoresScreen() {
+            startScreen.classList.remove("visible");
+            highscoresScreen.classList.add("visible");
+            const all = getHighscores();
+            highscoresDisplay.innerHTML = `
+                <h3>Multiplikation</h3>${renderHighscores("multiplication")}
+                <h3>Division</h3>${renderHighscores("division")}
+                <h3>Gemischt</h3>${renderHighscores("mixed")}
+            `;
+        }
+
+        // Event listeners for navigation
+        viewHighscoresButton.addEventListener("click", showHighscoresScreen);
+        clearHighscoresButton.addEventListener("click", () => {
+            clearHighscores();
+            highscoresDisplay.innerHTML = "<p>Highscores gelöscht.</p>";
+        });
+        backToMenuButton.addEventListener("click", () => {
+            highscoresScreen.classList.remove("visible");
+            startScreen.classList.add("visible");
+        });
+        restartButton.addEventListener("click", () => {
+            resultScreen.classList.remove("visible");
+            startScreen.classList.add("visible");
+        });
+
+        wordModeButton.addEventListener("click", () => showGameScreen("multiplication"));
+        numberModeButton.addEventListener("click", () => showGameScreen("division"));
+        mixedModeButton.addEventListener("click", () => showGameScreen("mixed"));
+        quickStartButton.addEventListener("click", () => {
+            // Randomly pick multiplication or division for quick start
+            const modes = ["multiplication", "division"];
+            const randomMode = modes[Math.floor(Math.random() * modes.length)];
+            showGameScreen(randomMode);
+        });
+
+        // ----------------------------------------------------------------------------
+        // Core Quiz Logic
+        // ----------------------------------------------------------------------------
+
+        function renderQuestion() {
+            if (currentQuestion >= 20) {
+                // Show result
+                const elapsedTime = (Date.now() - startTime) / 1000;
+                showResultScreen(correctAnswers, elapsedTime);
+                return;
+            }
+
+            currentQuestion++;
+            questionNumberDisplay.textContent = `Frage: ${currentQuestion}/20`;
+
+            // If mode is "mixed," randomly pick multiplication or division
+            const questionMode = mode === "mixed"
+                ? (Math.random() > 0.5 ? "multiplication" : "division")
+                : mode;
+
+            // Generate the question
+            const { questionText, correctAnswer, dividend, divisor, a, b } = getRandomMathQuestion(questionMode);
+            
+            // Generate plausible distractors
+            let wrongAnswers = [];
+            if (questionMode === "multiplication") {
+                wrongAnswers = generateMultiplicationDistractors(a, b, correctAnswer);
+            } else {
+                wrongAnswers = generateDivisionDistractors(dividend, divisor, correctAnswer);
+            }
+
+            // Combine and shuffle
+            const answers = [correctAnswer, ...wrongAnswers].sort(() => Math.random() - 0.5);
+
+            // Display question
+            timeDisplay.textContent = questionText;
+
+            // Render answer buttons
+            buttonsContainer.innerHTML = "";
+            answers.forEach((answer) => {
+                const button = document.createElement("button");
+                button.textContent = answer;
+                button.addEventListener("click", () => {
+                    if (answer === correctAnswer) {
+                        correctAnswers++;
+                        document.body.classList.add("flash");
+                    } else {
+                        document.body.classList.add("flash-incorrect");
+                    }
+                    scoreDisplay.textContent = `Richtig: ${correctAnswers}/20`;
+                    setTimeout(() => {
+                        document.body.classList.remove("flash");
+                        document.body.classList.remove("flash-incorrect");
+                        renderQuestion();
+                    }, 100);
+                });
+                buttonsContainer.appendChild(button);
+            });
+        }
+
+        // getRandomMathQuestion:
+        // returns an object with:
+        //   questionText (e.g., "7 x 8" or "40:8"),
+        //   correctAnswer,
+        //   a and b if multiplication,
+        //   dividend and divisor if division
+        function getRandomMathQuestion(questionMode) {
+            if (questionMode === "multiplication") {
+                // Random factors 1–10
+                const a = Math.floor(Math.random() * 10) + 1;
+                const b = Math.floor(Math.random() * 10) + 1;
+                return {
+                    questionText: `${a} x ${b}`,
+                    correctAnswer: a * b,
+                    a,
+                    b
+                };
+            } else {
+                // Division
+                // pick random divisor (1–10) and multiple (1–10)
+                // dividend = divisor * multiple
+                const divisor = Math.floor(Math.random() * 10) + 1;
+                const multiple = Math.floor(Math.random() * 10) + 1;
+                const dividend = divisor * multiple;
+                return {
+                    questionText: `${dividend}:${divisor}`,
+                    correctAnswer: multiple,
+                    dividend,
+                    divisor
+                };
+            }
+        }
+
+        // Generate plausible distractors for multiplication
+        // We'll pick other multiples of 'a' or 'b', up to 10, excluding the correct answer.
+        function generateMultiplicationDistractors(a, b, correctAnswer) {
+            const possible = new Set();
+
+            // All multiples of a in [a*1 .. a*10], excluding correctAnswer
+            for (let i = 1; i <= 10; i++) {
+                const val = a * i;
+                if (val !== correctAnswer && val >= 1 && val <= 100) {
+                    possible.add(val);
+                }
+            }
+            // All multiples of b in [b*1 .. b*10], excluding correctAnswer
+            for (let i = 1; i <= 10; i++) {
+                const val = b * i;
+                if (val !== correctAnswer && val >= 1 && val <= 100) {
+                    possible.add(val);
+                }
+            }
+
+            // Convert to array
+            let arr = Array.from(possible);
+
+            // If there's not enough, fill with random values up to 100
+            while (arr.length < 2) {
+                let randVal = Math.floor(Math.random() * 100) + 1;
+                if (!arr.includes(randVal) && randVal !== correctAnswer) {
+                    arr.push(randVal);
+                }
+            }
+
+            // Shuffle
+            arr.sort(() => Math.random() - 0.5);
+            // Return only 2 distractors
+            return arr.slice(0, 2);
+        }
+
+        // Generate plausible distractors for division
+        // We pick other divisors of 'dividend' in 1..10.
+        function generateDivisionDistractors(dividend, divisor, correctAnswer) {
+            const possible = new Set();
+
+            // Add every number in [1..10] that divides dividend
+            for (let i = 1; i <= 10; i++) {
+                if (dividend % i === 0 && i !== correctAnswer) {
+                    possible.add(i);
+                }
+            }
+
+            // Convert to array
+            let arr = Array.from(possible);
+
+            // If there's not enough divisors, fill with random 1..10
+            while (arr.length < 2) {
+                let randVal = Math.floor(Math.random() * 10) + 1;
+                if (!arr.includes(randVal) && randVal !== correctAnswer) {
+                    arr.push(randVal);
+                }
+            }
+
+            // Shuffle
+            arr.sort(() => Math.random() - 0.5);
+            // Return only 2 distractors
+            return arr.slice(0, 2);
+        }
+    </script>
+</body>
+</html>
